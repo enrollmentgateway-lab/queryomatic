@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Enrollment Query Tool</title>
+<style>
+  :root {
+    --ink: #1c2933;
+    --ink-soft: #5b6b76;
+    --line: #d8dee2;
+    --accent: #2f5d50;
+    --accent-soft: #e7efec;
+    --bg: #f7f8f6;
+    --panel: #ffffff;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    padding: 2rem 1.5rem 4rem;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.25rem;
+  }
+  .sub {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    margin: 0 0 1.75rem;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+  }
+  textarea, input[type=text] {
+    width: 100%;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    resize: vertical;
+    background: #fff;
+    color: var(--ink);
+  }
+  textarea:focus, input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  button {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.6rem 1.1rem;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: #fff;
+    color: var(--accent);
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .row { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.9rem; flex-wrap: wrap; }
+  .params-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .params-grid div { display: flex; flex-direction: column; }
+  .params-grid label { font-size: 0.7rem; margin-bottom: 0.25rem; }
+  .status { font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.6rem; min-height: 1.2em; }
+  .status.error { color: #a4342a; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  th {
+    background: var(--accent-soft);
+    font-weight: 650;
+    position: sticky;
+    top: 0;
+  }
+  .table-scroll { overflow-x: auto; max-height: 480px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .count { font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 0.5rem; }
+  .empty { color: var(--ink-soft); font-size: 0.9rem; padding: 1.5rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Enrollment Query Tool</h1>
+  <p class="sub">Describe the data you want in plain English. Review the generated parameters, then run the query.</p>
+
+  <div class="panel">
+    <label for="prompt">What data do you need?</label>
+    <textarea id="prompt" rows="3" placeholder="e.g. Fall applicants with a status of Student"></textarea>
+    <div class="row">
+      <button id="generateBtn">Generate query</button>
+      <span class="status" id="generateStatus"></span>
+    </div>
+
+    <div class="params-grid" id="paramsGrid" style="display:none;"></div>
+
+    <div class="row" id="runRow" style="display:none;">
+      <button id="runBtn">Run query</button>
+      <span class="status" id="runStatus"></span>
+    </div>
+  </div>
+
+  <div class="panel" id="resultsPanel" style="display:none;">
+    <div class="row" style="margin-top:0; justify-content: space-between;">
+      <div class="count" id="resultCount"></div>
+      <button class="secondary" id="downloadBtn">Download CSV</button>
+    </div>
+    <div class="table-scroll">
+      <table id="resultsTable">
+        <thead id="resultsHead"></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Point this at your deployed Cloudflare Worker URL.
+  const WORKER_URL = "https://slate-query-tool.YOUR_SUBDOMAIN.workers.dev";
+
+  const PARAM_KEYS = ["term", "year", "status", "pipeline", "teachingsite", "program", "app_code", "app_createddate"];
+
+  let currentParams = null;
+  let currentData = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  function setStatus(el, msg, isError = false) {
+    el.textContent = msg;
+    el.className = "status" + (isError ? " error" : "");
+  }
+
+  function renderParamsGrid(params) {
+    const grid = $("paramsGrid");
+    grid.innerHTML = "";
+    PARAM_KEYS.forEach((key) => {
+      const field = document.createElement("div");
+      const label = document.createElement("label");
+      label.textContent = key;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = params[key] || "";
+      input.dataset.key = key;
+      field.appendChild(label);
+      field.appendChild(input);
+      grid.appendChild(field);
+    });
+    grid.style.display = "grid";
+    $("runRow").style.display = "flex";
+  }
+
+  function collectParamsFromGrid() {
+    const inputs = document.querySelectorAll("#paramsGrid input");
+    const params = {};
+    inputs.forEach((input) => { params[input.dataset.key] = input.value; });
+    return params;
+  }
+
+  function renderResults(rows) {
+    const panel = $("resultsPanel");
+    const head = $("resultsHead");
+    const body = $("resultsBody");
+    const count = $("resultCount");
+    head.innerHTML = "";
+    body.innerHTML = "";
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      panel.style.display = "block";
+      count.textContent = "0 results";
+      body.innerHTML = '<tr><td class="empty">No rows returned</td></tr>';
+      return;
+    }
+
+    const columns = Object.keys(rows[0]);
+    const headRow = document.createElement("tr");
+    columns.forEach((col) => {
+      const th = document.createElement("th");
+      th.textContent = col;
+      headRow.appendChild(th);
+    });
+    head.appendChild(headRow);
+
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      columns.forEach((col) => {
+        const td = document.createElement("td");
+        td.textContent = row[col] ?? "";
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+
+    count.textContent = `${rows.length} result${rows.length === 1 ? "" : "s"}`;
+    panel.style.display = "block";
+  }
+
+  function toCSV(rows) {
+    if (!rows.length) return "";
+    const columns = Object.keys(rows[0]);
+    const escape = (val) => {
+      const s = String(val ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [columns.join(",")];
+    rows.forEach((row) => {
+      lines.push(columns.map((c) => escape(row[c])).join(","));
+    });
+    return lines.join("\n");
+  }
+
+  $("generateBtn").addEventListener("click", async () => {
+    const prompt = $("prompt").value.trim();
+    if (!prompt) return;
+    const btn = $("generateBtn");
+    btn.disabled = true;
+    setStatus($("generateStatus"), "Generating...");
+    try {
+      const resp = await fetch(`${WORKER_URL}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Failed to generate query");
+      currentParams = data.params;
+      renderParamsGrid(currentParams);
+      setStatus($("generateStatus"), "Review the parameters below, then run.");
+    } catch (err) {
+      setStatus($("generateStatus"), err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $("runBtn").addEventListener("click", async () => {
+    const params = collectParamsFromGrid();
+    const btn = $("runBtn");
+    btn.disabled = true;
+    setStatus($("runStatus"), "Running query...");
+    try {
+      const resp = await fetch(`${WORKER_URL}/api/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ params }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "Query failed");
+      currentData = Array.isArray(data.data) ? data.data : (data.data.rows || []);
+      renderResults(currentData);
+      setStatus($("runStatus"), "Done.");
+    } catch (err) {
+      setStatus($("runStatus"), err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $("downloadBtn").addEventListener("click", () => {
+    if (!currentData.length) return;
+    const csv = toCSV(currentData);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `enrollment_export_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>

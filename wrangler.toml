@@ -1,0 +1,14 @@
+name = "slate-query-tool"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+SLATE_QUERY_URL = "https://enroll.gs.edu/manage/query/run?id=b83ba692-55a0-42d9-b950-60a3f2eccac7&cmd=service"
+SLATE_OPTIONS_URL = "https://enroll.gs.edu/manage/query/run?id=4f1e5d6f-2286-4100-9b40-2b33fa1882aa&cmd=service&output=json&h=ac672395-33bd-4da3-bde6-0ff38f9bfb78"
+ALLOWED_ORIGIN = "https://enrollmentgateway-lab.github.io/queryomatic/"
+
+# Create with: wrangler kv namespace create OPTIONS_CACHE
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "OPTIONS_CACHE"
+id = "c6d8bdd0999b4c7b913769f3d2ce46b7"

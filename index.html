@@ -123,7 +123,7 @@
 
   <div class="panel">
     <label for="prompt">What data do you need?</label>
-    <textarea id="prompt" rows="3" placeholder="e.g. Fall applicants with a status of Student"></textarea>
+    <textarea id="prompt" row="3" placeholder="e.g. Fall applicants with a status of Student"></textarea>
     <div class="row">
       <button id="generateBtn">Generate query</button>
       <span class="status" id="generateStatus"></span>
@@ -193,7 +193,7 @@
     return params;
   }
 
-  function renderResults(rows) {
+  function renderResults(row) {
     const panel = $("resultsPanel");
     const head = $("resultsHead");
     const body = $("resultsBody");
@@ -201,14 +201,14 @@
     head.innerHTML = "";
     body.innerHTML = "";
 
-    if (!Array.isArray(rows) || rows.length === 0) {
+    if (!Array.isArray(row) || row.length === 0) {
       panel.style.display = "block";
       count.textContent = "0 results";
-      body.innerHTML = '<tr><td class="empty">No rows returned</td></tr>';
+      body.innerHTML = '<tr><td class="empty">No row returned</td></tr>';
       return;
     }
 
-    const columns = Object.keys(rows[0]);
+    const columns = Object.keys(row[0]);
     const headRow = document.createElement("tr");
     columns.forEach((col) => {
       const th = document.createElement("th");
@@ -217,7 +217,7 @@
     });
     head.appendChild(headRow);
 
-    rows.forEach((row) => {
+    row.forEach((row) => {
       const tr = document.createElement("tr");
       columns.forEach((col) => {
         const td = document.createElement("td");
@@ -227,19 +227,19 @@
       body.appendChild(tr);
     });
 
-    count.textContent = `${rows.length} result${rows.length === 1 ? "" : "s"}`;
+    count.textContent = `${row.length} result${row.length === 1 ? "" : "s"}`;
     panel.style.display = "block";
   }
 
-  function toCSV(rows) {
-    if (!rows.length) return "";
-    const columns = Object.keys(rows[0]);
+  function toCSV(row) {
+    if (!row.length) return "";
+    const columns = Object.keys(row[0]);
     const escape = (val) => {
       const s = String(val ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const lines = [columns.join(",")];
-    rows.forEach((row) => {
+    row.forEach((row) => {
       lines.push(columns.map((c) => escape(row[c])).join(","));
     });
     return lines.join("\n");

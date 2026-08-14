@@ -1119,6 +1119,11 @@ async function generateQueryParams(
   optionsMarkdown
 ) {
 
+  const currentDate =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
   logInfo(
     id,
     "Starting Anthropic request",
@@ -1173,6 +1178,21 @@ Do not invent parameter values.
 If the user does not specify a parameter, leave that parameter as an empty string.
 
 If the user's language corresponds to an alias or instruction in a Context section, translate it to the appropriate exact value from Valid Values.
+
+The output keys are Slate query parameter names. Map them to these options.md sections:
+
+- term: academic_term
+- year: academic_year
+- status: person_status
+- pipeline: pipelines
+- teachingsite: teachingsites
+- program: program
+
+Use the exact Valid Values from the mapped section. For a shorthand location such as "Burbank", select the one teaching-site value that contains that location name.
+
+Today is ${currentDate}. Resolve relative academic-term language when possible. For example, "this fall" means term "Fall" and the academic-year value whose first year is this calendar year. Thus, during 2026, "this fall" maps to year "2026-2027".
+
+When the user asks for "students", use the exact person_status value "Student" in the status output key, if it is a valid value.
 
 OPTIONS.MD
 ============================================================

@@ -644,11 +644,9 @@
   });
 
   // ---------- Admin: options.md management ----------
-  // Assumes worker endpoints:
-  //   GET  /api/options          -> { content: "..." }
-  //   POST /api/options          -> { content } saves an edited version
-  //   POST /api/options/refresh  -> regenerates options.md from the source system, returns { content }
-  // Adjust these paths to match your worker if they differ.
+  // Worker endpoints:
+  //   GET  /api/options          -> { markdown: "..." }
+  //   POST /api/options/refresh  -> refreshes options.md from Slate and commits it to GitHub
 
   async function loadOptions() {
     setStatus($("optionsStatus"), "Loading...");
@@ -656,7 +654,7 @@
       const resp = await fetch(`${WORKER_URL}/api/options`);
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Failed to load options.md");
-      $("optionsContent").value = data.content || "";
+      $("optionsContent").value = data.markdown || "";
       setStatus($("optionsStatus"), "Loaded.");
     } catch (err) {
       setStatus($("optionsStatus"), err.message, true);
@@ -673,8 +671,13 @@
       const resp = await fetch(`${WORKER_URL}/api/options/refresh`, { method: "POST" });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Refresh failed");
-      $("optionsContent").value = data.content || "";
-      setStatus($("optionsStatus"), "Refreshed from source.");
+      if (data.updated) {
+        await loadOptions();
+        setStatus($("optionsStatus"), "Refreshed from source and reloaded from GitHub.");
+      } else {
+        await loadOptions();
+        setStatus($("optionsStatus"), "Already current; reloaded from GitHub.");
+      }
     } catch (err) {
       setStatus($("optionsStatus"), err.message, true);
     } finally {

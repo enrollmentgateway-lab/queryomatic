@@ -294,7 +294,9 @@ async function getGitHubOptionsFile(
   }
 
 
-  if (!data.content) {
+  // GitHub represents an intentionally empty file as content: "".
+  // Accept that valid value so a Slate refresh can rebuild options.md.
+  if (typeof data.content !== "string") {
     throw new Error(
       "GitHub options.md response did not contain file content"
     );

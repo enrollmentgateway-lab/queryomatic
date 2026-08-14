@@ -727,7 +727,11 @@ _Add context for this parameter here._
 
 <!-- VALUES:person_status START -->
 
+- Applicant
+- Graduate
 - Inquiry
+- Prospect
+- Student
 
 <!-- VALUES:person_status END -->
 

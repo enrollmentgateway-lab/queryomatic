@@ -6,7 +6,7 @@
 
 ### Context
 
-_Add context for this parameter here._
+These are filled out during RFIs and simply represent the interests that the inquirer expressed.
 
 ### Valid Values
 
@@ -26,7 +26,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+These are the three main options for schooling periods at our institution. They happen once a year in order. The order goes Fall - Summer - Spring. When the query prompt asks for the next or previous or upcoming term. 
 
 ### Valid Values
 
@@ -42,7 +42,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+These are valid academic year periods. The first year represents the year that the fall term lands in, the second year represents the year that the spring term falls in. These values should never be separated; they are paired together. Example - if the date is 8/1/26 then "next spring" would be the year code 2026-2027. 
 
 ### Valid Values
 
@@ -84,7 +84,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+These are the various degree options which applicants may have applied for. 
 
 ### Valid Values
 
@@ -128,7 +128,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+These are the different types of degrees.
 
 ### Valid Values
 
@@ -146,7 +146,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+
 
 ### Valid Values
 
@@ -180,7 +180,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+These are various organizations, churches, or schools, that we expect inquires, applicants, and students to flow from. 
 
 ### Valid Values
 
@@ -208,7 +208,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+This is a sister-value to degree but is more specific to the program. All programs relate to one degree, but each degree may have many programs. 
 
 ### Valid Values
 
@@ -266,75 +266,11 @@ _Add context for this parameter here._
 
 <!-- VALUES:program END -->
 
-## standard_degree
-
-### Context
-
-_Add context for this parameter here._
-
-### Valid Values
-
-<!-- VALUES:standard_degree START -->
-
-- Bible Teaching Certificate
-- Children's Ministry Certificate
-- Chinese-English Bilingual Diploma in Divinity
-- Chinese-English Bilingual Diploma in Theological Studies
-- Chinese-English Bilingual Diploma of Theological Essentials
-- Chinese-English Bilingual Master of Divinity
-- Chinese-English Bilingual Master of Theological Essentials
-- Chinese-English Bilingual Master of Theological Studies
-- Chinese-English Bilingual Special Student
-- Christian Counseling Certificate
-- Concurrent Undergraduate Enrollment Status
-- Diploma in Christian Counseling
-- Diploma in Divinity
-- Diploma in Education Leadership
-- Diploma in Global Engagement
-- Diploma in Theological Essentials
-- Diploma in Theological Studies
-- Doctor of Ministry
-- Doctor of Philosophy
-- Global Engagement Certificate
-- IMB Qualification Certificate
-- Korean-English Bilingual Diploma in Divinity
-- Korean-English Bilingual Diploma in Educational Leadership
-- Korean-English Bilingual Diploma in Global Engagement
-- Korean-English Bilingual Diploma in Theological Studies
-- Korean-English Bilingual Master of Arts in Educational Leadership
-- Korean-English Bilingual Master of Divinity
-- Korean-English Bilingual Master of Theological Essentials
-- Korean-English Bilingual Master of Theological Studies
-- Korean-English Bilingual Special Student
-- LIST
-- Master of Arts in Christian Counseling
-- Master of Arts in Educational Leadership
-- Master of Biblical and Theological Studies
-- Master of Biblical Counseling
-- Master of Divinity
-- Master of Global Engagement
-- Master of Theological Essentials
-- Master of Theological Studies
-- Master of Theological Studies - Biblical Studies Concentration
-- Master of Theological Studies - Theology Concentration
-- Master of Theology
-- Ministry to Women Certificate
-- MME
-- Pastoral Care Certificate
-- Spanish-English Bilingual Diploma of Theological Essentials
-- Spanish-English Bilingual Master of Theological Essentials
-- Special Student
-- Spiritual Formation Certificate
-- SPST
-- Youth Ministry Certificate
-
-<!-- VALUES:standard_degree END -->
-
 ## teachingsites
 
 ### Context
 
-_Add context for this parameter here._
+These are teaching sites where accepted students OR applicants may express interest in attending for some of their classes. 
 
 ### Valid Values
 

@@ -306,7 +306,19 @@
   // Point this at your deployed Cloudflare Worker URL.
   const WORKER_URL = "https://slate-query-tool.queryomatic.workers.dev";
 
-  const PARAM_KEYS = ["term", "year", "status", "pipeline", "teachingsite", "program", "app_code", "app_createddate"];
+  const PARAMS = [
+    ["term", "Term"],
+    ["year", "Academic Year"],
+    ["status", "Person Status"],
+    ["pipeline", "Pipeline"],
+    ["teachingsite", "Teaching Site"],
+    ["program", "Program"],
+    ["app_code", "Decision Code"],
+    ["app_createddate_start", "Application Created Date (Start)"],
+    ["app_createddate_end", "Application Created Date (End)"],
+  ];
+  const PARAM_LABELS = Object.fromEntries(PARAMS);
+  const PARAM_KEYS = PARAMS.map(([key]) => key);
 
   const $ = (id) => document.getElementById(id);
 
@@ -397,10 +409,10 @@
   function renderParamsGrid(params) {
     const grid = $("paramsGrid");
     grid.innerHTML = "";
-    PARAM_KEYS.forEach((key) => {
+    PARAMS.forEach(([key, labelText]) => {
       const field = document.createElement("div");
       const label = document.createElement("label");
-      label.textContent = key;
+      label.textContent = labelText;
       const input = document.createElement("input");
       input.type = "text";
       input.value = params[key] || "";
@@ -429,7 +441,7 @@
       const tag = document.createElement("span");
       tag.className = "tag";
       tag.style.animationDelay = `${i * 40}ms`;
-      tag.innerHTML = `${key}: <b>${value}</b>`;
+      tag.innerHTML = `${PARAM_LABELS[key] || key}: <b>${value}</b>`;
       row.appendChild(tag);
     });
   }
@@ -502,7 +514,7 @@
       const chip = document.createElement("span");
       chip.className = "chip";
       chip.style.animationDelay = `${i * 40}ms`;
-      chip.innerHTML = `${key}: ${value}`;
+      chip.innerHTML = `${PARAM_LABELS[key] || key}: ${value}`;
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "Remove";
       removeBtn.addEventListener("click", () => removeParamAndRerun(key));

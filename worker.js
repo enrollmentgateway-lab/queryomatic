@@ -1187,7 +1187,7 @@ The output keys are Slate query parameter names. Map them to these options.md se
 - pipeline: pipelines
 - teachingsite: teachingsites
 - program: program
-- app_code: app_code
+- app_code: Decision Code
 
 Use the exact Valid Values from the mapped section. For a shorthand location such as "Burbank", select the one teaching-site value that contains that location name.
 
@@ -1196,6 +1196,8 @@ Today is ${currentDate}. Resolve relative academic-term language when possible. 
 When the user asks for "students", use the exact person_status value "Student" in the status output key, if it is a valid value.
 
 When the user asks for "admitted students" or "admitted applications", set status to the exact person_status value "Student" and app_code to "AT", if those are valid values. When they specifically ask for provisionally admitted students, use app_code "ATP" instead.
+
+Application Created Date is a date range. Use app_createddate_start for the inclusive beginning of the requested range and app_createddate_end for the inclusive end. Return dates in YYYY-MM-DD format. If the user provides only one boundary (for example, "created since January 1, 2026"), leave the other boundary empty. If they name a full month, use its first and last calendar dates. Do not use app_createddate.
 
 OPTIONS.MD
 ============================================================
@@ -1215,7 +1217,8 @@ Respond with ONLY a JSON object using exactly these keys:
   "teachingsite": "",
   "program": "",
   "app_code": "",
-  "app_createddate": ""
+  "app_createddate_start": "",
+  "app_createddate_end": ""
 }
 
 No prose.

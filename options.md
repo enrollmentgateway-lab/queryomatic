@@ -390,7 +390,7 @@ _Add context for this parameter here._
 
 <!-- VALUES:teachingsites END -->
 
-## app_code
+## Decision Code
 
 ### Context
 
@@ -411,3 +411,9 @@ DN - Deny
 - DN
 
 <!-- VALUES:app_code END -->
+
+## Application Created Date (Start/End)
+
+### Context
+
+Use this to filter on when an application was created. A date range is sent as two parameters: `app_createddate_start` for the inclusive beginning and `app_createddate_end` for the inclusive end. Dates must use `YYYY-MM-DD`. Leave either parameter empty when the request provides only one boundary.

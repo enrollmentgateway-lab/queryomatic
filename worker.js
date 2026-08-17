@@ -43,6 +43,8 @@
  * - SLATE_TOKEN_MAINDB
  * - ANTHROPIC_API_KEY
  * - GITHUB_TOKEN
+ * - APP_PASSWORD
+ * - SESSION_SECRET
  *
  * Vars:
  * - SLATE_OPTIONS_URL
@@ -132,11 +134,17 @@ function corsHeaders(env) {
 
     "Access-Control-Allow-Headers":
       "Content-Type",
+
+    "Access-Control-Allow-Credentials":
+      "true",
+
+    "Vary":
+      "Origin",
   };
 }
 
 
-function json(data, env, status = 200) {
+function json(data, env, status = 200, extraHeaders = {}) {
   return new Response(
     JSON.stringify(data),
     {
@@ -144,9 +152,97 @@ function json(data, env, status = 200) {
       headers: {
         "Content-Type": "application/json",
         ...corsHeaders(env),
+        ...extraHeaders,
       },
     }
   );
+}
+
+
+// ============================================================
+// SHARED-PASSWORD SESSION AUTHENTICATION
+// ============================================================
+
+const SESSION_COOKIE = "queryomatic_session";
+const SESSION_DURATION_SECONDS = 8 * 60 * 60;
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+const MAX_LOGIN_ATTEMPTS = 5;
+
+function base64UrlEncode(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecode(value) {
+  const padded = String(value).replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - String(value).length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+async function hmacSha256(secret, text) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(text)));
+}
+
+function timingSafeEqual(first, second) {
+  if (first.length !== second.length) return false;
+  let result = 0;
+  for (let i = 0; i < first.length; i++) result |= first[i] ^ second[i];
+  return result === 0;
+}
+
+function cookieValue(request, name) {
+  const match = request.headers.get("Cookie")?.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? match[1] : null;
+}
+
+async function createSession(env) {
+  if (!env.SESSION_SECRET) throw new Error("SESSION_SECRET is missing");
+  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + SESSION_DURATION_SECONDS })));
+  const signature = base64UrlEncode(await hmacSha256(env.SESSION_SECRET, payload));
+  return `${payload}.${signature}`;
+}
+
+async function hasValidSession(request, env) {
+  if (!env.SESSION_SECRET) return false;
+  const token = cookieValue(request, SESSION_COOKIE);
+  if (!token || token.split(".").length !== 2) return false;
+  try {
+    const [payload, providedSignature] = token.split(".");
+    const expectedSignature = base64UrlEncode(await hmacSha256(env.SESSION_SECRET, payload));
+    if (!timingSafeEqual(base64UrlDecode(providedSignature), base64UrlDecode(expectedSignature))) return false;
+    const { exp } = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload)));
+    return Number.isInteger(exp) && exp > Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
+
+async function passwordMatches(password, expectedPassword) {
+  const encoder = new TextEncoder();
+  const suppliedHash = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(password)));
+  const expectedHash = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(expectedPassword)));
+  return timingSafeEqual(suppliedHash, expectedHash);
+}
+
+function clientIp(request) {
+  return request.headers.get("CF-Connecting-IP") || "unknown";
+}
+
+async function loginIsRateLimited(env, request) {
+  const attempts = Number(await env.OPTIONS_CACHE.get(`login-attempts:${clientIp(request)}`) || 0);
+  return attempts >= MAX_LOGIN_ATTEMPTS;
+}
+
+async function recordFailedLogin(env, request) {
+  const key = `login-attempts:${clientIp(request)}`;
+  const attempts = Number(await env.OPTIONS_CACHE.get(key) || 0) + 1;
+  await env.OPTIONS_CACHE.put(key, String(attempts), { expirationTtl: LOGIN_WINDOW_SECONDS });
+}
+
+function sessionCookie(value) {
+  return `${SESSION_COOKIE}=${value}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; HttpOnly; Secure; SameSite=None`;
 }
 
 
@@ -1550,6 +1646,37 @@ export default {
 
 
     try {
+
+      // Login is the only endpoint that does not require a valid session.
+      if (url.pathname === "/api/login" && request.method === "POST") {
+        if (!env.APP_PASSWORD || !env.SESSION_SECRET) {
+          throw new Error("APP_PASSWORD or SESSION_SECRET is missing");
+        }
+        if (await loginIsRateLimited(env, request)) {
+          return json({ error: "Too many attempts. Try again in 15 minutes." }, env, 429);
+        }
+
+        const body = await request.json();
+        if (!await passwordMatches(String(body?.password || ""), env.APP_PASSWORD)) {
+          await recordFailedLogin(env, request);
+          return json({ error: "Incorrect password" }, env, 401);
+        }
+
+        return json(
+          { ok: true },
+          env,
+          200,
+          { "Set-Cookie": sessionCookie(await createSession(env)) }
+        );
+      }
+
+      if (!await hasValidSession(request, env)) {
+        return json({ error: "Sign in required" }, env, 401);
+      }
+
+      if (url.pathname === "/api/session" && request.method === "GET") {
+        return json({ ok: true }, env);
+      }
 
 
       // ======================================================

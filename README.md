@@ -16,9 +16,20 @@ wrangler kv namespace create OPTIONS_CACHE
 wrangler secret put SLATE_TOKEN_PROMPTS
 wrangler secret put SLATE_TOKEN_MAINDB
 wrangler secret put ANTHROPIC_API_KEY
+wrangler secret put APP_PASSWORD
+wrangler secret put SESSION_SECRET
 
 wrangler deploy
 ```
+
+`APP_PASSWORD` is the shared password shown to authorized staff. Use a long,
+random password and distribute it only through an approved channel.
+
+`SESSION_SECRET` signs browser sessions. Generate a separate random value (for
+example, with `openssl rand -base64 32`) and never share it. Changing either
+`SESSION_SECRET` invalidates active sessions after their next request. Changing
+`APP_PASSWORD` changes the password required for future sign-ins. Rotate both
+secrets after a password-security event.
 
 Edit `wrangler.toml` first:
 - `SLATE_QUERY_URL` — the query that returns the actual export data
@@ -41,6 +52,10 @@ Push this repo to GitHub, enable **Settings → Pages → Deploy from branch**,
 and point it at the branch/folder containing `index.html`.
 
 ## Notes
+
+- The Worker requires the shared password for every API request. Login attempts
+  are limited to five per IP address in a 15-minute window, and sessions expire
+  after eight hours.
 
 - Your two Slate tokens and Anthropic key live only in the Worker (via
   `wrangler secret`) — never in the frontend or the repo.

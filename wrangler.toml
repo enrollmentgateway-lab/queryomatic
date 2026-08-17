@@ -3,7 +3,7 @@ main = "worker.js"
 compatibility_date = "2024-01-01"
 
 [vars]
-SLATE_QUERY_URL = "https://enroll.gs.edu/manage/query/run?id=b83ba692-55a0-42d9-b950-60a3f2eccac7&cmd=service&output=json&term=&year=&status=&pipeline=&teachingsite=&program=&app_code=&app_createddate="
+SLATE_QUERY_URL = "https://enroll.gs.edu/manage/query/run?id=b83ba692-55a0-42d9-b950-60a3f2eccac7&cmd=service&output=json&term=&year=&status=&pipeline=&teachingsite=&program=&app_code=&app_createddate_start=&app_createddate_end="
 SLATE_OPTIONS_URL = "https://enroll.gs.edu/manage/query/run?id=4f1e5d6f-2286-4100-9b40-2b33fa1882aa&cmd=service&output=json"
 ALLOWED_ORIGIN = "https://enrollmentgateway-lab.github.io"
 

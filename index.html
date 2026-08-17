@@ -127,7 +127,7 @@
     letter-spacing: 0.05em;
     margin-bottom: 0.4rem;
   }
-  textarea, input[type=text] {
+  textarea, input[type=text], input[type=password] {
     width: 100%;
     font-family: var(--sans);
     font-size: 0.95rem;
@@ -231,13 +231,26 @@
 </style>
 </head>
 <body>
+<div class="wrap" id="loginPanel">
+  <div class="title-mark"><h1>BetterQuery</h1></div>
+  <div class="panel">
+    <h3>Staff sign-in</h3>
+    <p class="hint">Enter the shared staff password to access this tool.</p>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
+    <div class="row">
+      <button id="loginBtn">Sign in</button>
+      <span class="status" id="loginStatus"></span>
+    </div>
+  </div>
+</div>
 <div class="rail" id="rail" aria-hidden="true">
   <div class="seg" data-step="ask" title="Ask"></div>
   <div class="seg" data-step="parse" title="Parse"></div>
   <div class="seg" data-step="results" title="Results"></div>
 </div>
 
-<div class="wrap">
+<div class="wrap" id="appContent" style="display:none;">
   <div class="mode-tabs">
     <button class="tab active" data-mode="user">User</button>
     <button class="tab" data-mode="admin">Admin</button>
@@ -332,6 +345,50 @@
     el.className = "status" + (isError ? " error" : "");
   }
 
+  async function apiFetch(path, options = {}) {
+    return fetch(`${WORKER_URL}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: { ...(options.headers || {}) },
+    });
+  }
+
+  function showApp() {
+    $("loginPanel").style.display = "none";
+    $("appContent").style.display = "block";
+  }
+
+  async function signIn() {
+    const password = $("password").value;
+    const button = $("loginBtn");
+    button.disabled = true;
+    setStatus($("loginStatus"), "Signing in...");
+    try {
+      const response = await apiFetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Sign-in failed");
+      $("password").value = "";
+      showApp();
+    } catch (error) {
+      setStatus($("loginStatus"), error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  $("loginBtn").addEventListener("click", signIn);
+  $("password").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") signIn();
+  });
+
+  apiFetch("/api/session").then((response) => {
+    if (response.ok) showApp();
+  }).catch(() => {});
+
   // Signature: the top rail always reflects which of the three states we're in.
   function setStep(step, pulsing = false) {
     document.querySelectorAll(".rail .seg").forEach((s) => {
@@ -385,7 +442,7 @@
   // ---------- Query generation ----------
 
   async function generateParams(promptText) {
-    const resp = await fetch(`${WORKER_URL}/api/generate`, {
+    const resp = await apiFetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: promptText }),
@@ -396,7 +453,7 @@
   }
 
   async function runParams(params) {
-    const resp = await fetch(`${WORKER_URL}/api/run`, {
+    const resp = await apiFetch("/api/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ params }),
@@ -663,7 +720,7 @@
   async function loadOptions() {
     setStatus($("optionsStatus"), "Loading...");
     try {
-      const resp = await fetch(`${WORKER_URL}/api/options`);
+      const resp = await apiFetch("/api/options");
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Failed to load options.md");
       $("optionsContent").value = data.markdown || "";
@@ -680,7 +737,7 @@
     btn.disabled = true;
     setStatus($("optionsStatus"), "Refreshing from source...");
     try {
-      const resp = await fetch(`${WORKER_URL}/api/options/refresh`, { method: "POST" });
+      const resp = await apiFetch("/api/options/refresh", { method: "POST" });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Refresh failed");
       if (data.updated) {
@@ -702,7 +759,7 @@
     btn.disabled = true;
     setStatus($("optionsStatus"), "Saving...");
     try {
-      const resp = await fetch(`${WORKER_URL}/api/options`, {
+      const resp = await apiFetch("/api/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: $("optionsContent").value }),

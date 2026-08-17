@@ -232,7 +232,7 @@ _Add context for this parameter here._
 
 ### Context
 
-_Add context for this parameter here._
+These are various statuses that a person can be in. Persons with applications are applicants, people with no application are inquiries, prospects are people from specific events, students are all applications that are admitted. Students are sometimes referred to as 'students' other times as 'admitted' or even 'admitted applications'. Admitted applications are in the student status not applicant status. 
 
 ### Valid Values
 

@@ -389,3 +389,25 @@ _Add context for this parameter here._
 - Valley Baptist University, Bakersfield
 
 <!-- VALUES:teachingsites END -->
+
+## app_code
+
+### Context
+
+These values relate to the various stages of an application. These are what they mean.
+
+AT - Admit
+ATP - Admitted Provisional
+DF - Defer
+DN - Deny
+
+### Valid Values
+
+<!-- VALUES:person_status START -->
+
+- AT
+- ATP
+- DF
+- DN
+
+<!-- VALUES:person_status END -->

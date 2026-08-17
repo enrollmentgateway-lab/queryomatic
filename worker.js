@@ -1187,12 +1187,15 @@ The output keys are Slate query parameter names. Map them to these options.md se
 - pipeline: pipelines
 - teachingsite: teachingsites
 - program: program
+- app_code: app_code
 
 Use the exact Valid Values from the mapped section. For a shorthand location such as "Burbank", select the one teaching-site value that contains that location name.
 
 Today is ${currentDate}. Resolve relative academic-term language when possible. For example, "this fall" means term "Fall" and the academic-year value whose first year is this calendar year. Thus, during 2026, "this fall" maps to year "2026-2027".
 
 When the user asks for "students", use the exact person_status value "Student" in the status output key, if it is a valid value.
+
+When the user asks for "admitted students" or "admitted applications", set status to the exact person_status value "Student" and app_code to "AT", if those are valid values. When they specifically ask for provisionally admitted students, use app_code "ATP" instead.
 
 OPTIONS.MD
 ============================================================

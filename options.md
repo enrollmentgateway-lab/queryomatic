@@ -403,11 +403,11 @@ DN - Deny
 
 ### Valid Values
 
-<!-- VALUES:person_status START -->
+<!-- VALUES:app_code START -->
 
 - AT
 - ATP
 - DF
 - DN
 
-<!-- VALUES:person_status END -->
+<!-- VALUES:app_code END -->

@@ -65,6 +65,9 @@ const GITHUB_OPTIONS_PATH = "options.md";
 const GITHUB_API_URL =
   `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_OPTIONS_PATH}`;
 
+const EXPORT_CACHE_PREFIX = "export-run:";
+const EXPORT_TTL_SECONDS = 15 * 60;
+
 
 
 // ============================================================
@@ -134,6 +137,9 @@ function corsHeaders(env) {
 
     "Access-Control-Allow-Headers":
       "Content-Type",
+
+    "Access-Control-Expose-Headers":
+      "Content-Disposition",
 
     "Access-Control-Allow-Credentials":
       "true",
@@ -1591,6 +1597,36 @@ async function runSlateQuery(
 
 
 // ============================================================
+// CSV EXPORTS
+// ============================================================
+
+function slateRows(data) {
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data?.row) ? data.row : [];
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[\",\n\r]/.test(text)
+    ? `"${text.replace(/"/g, '""')}"`
+    : text;
+}
+
+function rowsToCsv(rows) {
+  if (!rows.length) return "";
+
+  const columns = [...new Set(rows.flatMap((row) => Object.keys(row || {})))];
+  const lines = [columns.map(csvCell).join(",")];
+
+  for (const row of rows) {
+    lines.push(columns.map((column) => csvCell(row?.[column])).join(","));
+  }
+
+  return lines.join("\r\n");
+}
+
+
+// ============================================================
 // WORKER
 // ============================================================
 
@@ -1890,6 +1926,99 @@ export default {
           },
           env
         );
+      }
+
+
+      // ======================================================
+      // CREATE CSV EXPORT
+      //
+      // Generates query parameters from a prompt, runs the
+      // main Slate query, and stores the CSV briefly in KV.
+      // ======================================================
+
+      if (
+        url.pathname === "/api/export" &&
+        request.method === "POST"
+      ) {
+
+        const body = await request.json();
+        const prompt = body?.prompt;
+
+        if (!prompt || !String(prompt).trim()) {
+          return json(
+            {
+              error: "Missing 'prompt'",
+              requestId: id,
+            },
+            env,
+            400
+          );
+        }
+
+        const file = await getGitHubOptionsFile(env, id);
+        const params = await generateQueryParams(
+          env,
+          id,
+          String(prompt),
+          file.markdown
+        );
+        const data = await runSlateQuery(env, id, params);
+        const rows = slateRows(data);
+        const runId = crypto.randomUUID();
+
+        await env.OPTIONS_CACHE.put(
+          `${EXPORT_CACHE_PREFIX}${runId}`,
+          rowsToCsv(rows),
+          { expirationTtl: EXPORT_TTL_SECONDS }
+        );
+
+        return json(
+          {
+            runId,
+            downloadUrl: new URL(`/api/export/${runId}`, url.origin).toString(),
+            rowCount: rows.length,
+            params,
+            expiresInSeconds: EXPORT_TTL_SECONDS,
+            requestId: id,
+          },
+          env,
+          201
+        );
+      }
+
+
+      // ======================================================
+      // DOWNLOAD CSV EXPORT
+      // ======================================================
+
+      const exportMatch = url.pathname.match(
+        /^\/api\/export\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})$/i
+      );
+
+      if (exportMatch && request.method === "GET") {
+        const csv = await env.OPTIONS_CACHE.get(
+          `${EXPORT_CACHE_PREFIX}${exportMatch[1]}`
+        );
+
+        if (csv === null) {
+          return json(
+            {
+              error: "Export run was not found or has expired",
+              requestId: id,
+            },
+            env,
+            404
+          );
+        }
+
+        return new Response(csv, {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename=\"enrollment_export_${exportMatch[1]}.csv\"`,
+            "Cache-Control": "no-store",
+            ...corsHeaders(env),
+          },
+        });
       }
 
 

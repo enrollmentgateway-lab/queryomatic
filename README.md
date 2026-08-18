@@ -61,6 +61,12 @@ and point it at the branch/folder containing `index.html`.
   `wrangler secret`) — never in the frontend or the repo.
 - The Worker caches the parameter options in KV for 12 hours to cut down
   on Slate calls; call `GET /api/options?refresh=1` to force a refresh.
+- The API also supports a two-step CSV export for integrations. After signing
+  in through `POST /api/login` and retaining its session cookie, send
+  `POST /api/export` with `{ "prompt": "admitted students for fall 2026" }`.
+  The response contains `downloadUrl`; request that URL with `GET` and the
+  same session cookie to receive the CSV. Export files are retained in KV for
+  15 minutes, then `GET` returns `404`.
 - Cloudflare's free tier (100k requests/day) comfortably covers a
   medium-size office.
 - Before scaling this beyond testing, move off your personal Anthropic

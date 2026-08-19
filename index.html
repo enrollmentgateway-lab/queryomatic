@@ -64,28 +64,6 @@
 
   .wrap { max-width: 860px; margin: 0 auto; }
 
-  .mode-tabs {
-    display: inline-flex;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 3px;
-    background: #fff;
-    margin-bottom: 1.4rem;
-  }
-  .tab {
-    border: none;
-    background: transparent;
-    color: var(--ink-soft);
-    font-weight: 600;
-    font-size: 0.8rem;
-    padding: 0.42rem 1rem;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-  .tab.active { background: var(--ink); color: #fff; }
-  .tab:not(.active):hover { background: var(--bg); }
-
   .title-mark { position: relative; display: inline-block; margin-bottom: 0.35rem; }
   h1 {
     font-family: var(--display);
@@ -212,7 +190,7 @@
   th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th { background: var(--ink); color: #fff; font-weight: 600; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; }
   tbody tr:hover { background: var(--teal-soft); }
-  .table-scroll { overflow-x: auto; max-height: 480px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .table-scroll { overflow-x: auto; max-height: 480px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; margin-top: 0.75rem; }
   .count { font-size: 0.82rem; color: var(--teal-dark); font-weight: 700; margin-bottom: 0.5rem; }
   .empty { color: var(--ink-soft); font-size: 0.9rem; padding: 1.5rem; text-align: center; }
 
@@ -251,11 +229,6 @@
 </div>
 
 <div class="wrap" id="appContent" style="display:none;">
-  <div class="mode-tabs">
-    <button class="tab active" data-mode="user">User</button>
-    <button class="tab" data-mode="admin">Admin</button>
-  </div>
-
   <div class="title-mark"><h1 id="pageTitle">SimpleQuery</h1></div>
   <p class="sub" id="modeSub">Type what you need. Hit Go.</p>
 
@@ -335,7 +308,15 @@
 
   const $ = (id) => document.getElementById(id);
 
-  let mode = "user";
+  const requestedPath = new URLSearchParams(window.location.search).get("path");
+  const routePath = requestedPath || window.location.pathname;
+  let mode = routePath.replace(/\/$/, "") === "/admin" ? "admin" : "user";
+
+  // GitHub Pages serves 404.html for extensionless routes. Restore the
+  // requested address after that fallback has loaded this single-page app.
+  if (requestedPath === "/home" || requestedPath === "/admin") {
+    window.history.replaceState(null, "", requestedPath);
+  }
   let lastPrompt = "";
   let lastParams = null;
   let currentData = [];
@@ -408,7 +389,6 @@
 
   function setMode(m) {
     mode = m;
-    document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.mode === m));
     const isAdmin = m === "admin";
     $("optionsPanel").style.display = isAdmin ? "block" : "none";
     $("primaryBtn").textContent = isAdmin ? "Generate query" : "Go →";
@@ -421,9 +401,7 @@
     $("noResultsPanel").style.display = "none";
   }
 
-  document.querySelectorAll(".tab").forEach((t) => {
-    t.addEventListener("click", () => setMode(t.dataset.mode));
-  });
+  setMode(mode);
 
   $("prompt").addEventListener("input", () => setStep("ask"));
   $("prompt").addEventListener("keydown", (e) => {

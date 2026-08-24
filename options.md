@@ -366,6 +366,7 @@ _Add context for this parameter here._
 
 <!-- VALUES:teachingsites START -->
 
+- Agricola in Finland
 - Bakersfield Site at Kern Country Southern Baptist Association
 - Boston School of Ministry
 - Burbank Site at Story City Church
